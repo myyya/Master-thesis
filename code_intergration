@@ -1,0 +1,76 @@
+filtered_sn2315 <- subset(x =sn2315, 
+                          subset= (nCount_RNA >= 500) & 
+                            (nFeature_RNA >= 300) & 
+                            (log10GenesPerUMI > 0.85) & 
+                            (percent.mt < 10))
+filtered_sn1926 <- subset(x =sn1926, 
+                          subset= (nCount_RNA >= 700) & 
+                            (nFeature_RNA >= 400) & 
+                            (log10GenesPerUMI > 0.85) & 
+                            (percent.mt < 10))
+filtered_sn2326 <- subset(x =sn2326, 
+                          subset= (nCount_RNA >= 1000) & 
+                            (nFeature_RNA >= 400) & 
+                            (log10GenesPerUMI > 0.82) & 
+                            (percent.mt < 12))
+filtered_sn2402 <- subset(x =sn2402, 
+                          subset= (nCount_RNA >= 700) & 
+                            (nFeature_RNA >= 400) & 
+                            (log10GenesPerUMI > 0.82) & 
+                            (percent.mt < 10))
+cellinfo<-subset(snRNA@meta.data,select=c("orig.ident","percent.mt","log10GenesPerUMI","celltype","time"))
+snRNA_select<-CreateSeuratObject(snRNA@assays$RNA@counts,meta.data = cellinfo)
+
+merged<-merge(x=sn1926,y=c(sn2315,sn2326,sn2402,snRNA_select))
+
+##CCA
+scRNAlist<-SplitObject(merged_seurat, split.by = "orig.ident")
+scRNAlist <- lapply(scRNAlist, FUN = function(x)SCTransform(x))
+#find anchors 
+scRNA.features <- SelectIntegrationFeatures(scRNAlist, nfeatures = 3000,fvf.nfeatures = 3000)
+scRNAlist <- PrepSCTIntegration(scRNAlist,anchor.features = scRNA.features)
+
+scRNA.anchors<-FindIntegrationAnchors(object.list = scRNAlist,normalization.method="SCT",anchor.features = scRNA.features)
+#intergrate anchors
+scRNA.sct.int <- IntegrateData(scRNA.anchors, normalization.method="SCT")
+scRNA <- RunPCA(scRNA.sct.int, npcs=50, verbose = FALSE)
+ElbowPlot(scRNA,ndims=50)
+pc.nums=1:20
+scRNA <- scRNA %>% RunTSNE(dims=pc.nums,check_duplicates=FALSE) %>% RunUMAP(dims=pc.nums)
+p1 <- DimPlot(scRNA,group.by = "orig.ident")
+
+
+p2 <- DimPlot(scRNA,group.by = "orig.ident",split.by="orig.ident",ncol=4)
+p1+p2
+ggsave("UMAP_Split_integr_anchor.pdf",p3,width=18,height=12)
+
+
+
+##harmony
+snRNA.list <- SplitObject(object = merged, split.by = "platform")
+for (i in 1:length(snRNA.list)) {
+  snRNA.list[[i]] <- SCTransform(snRNA.list[[i]], verbose = FALSE)
+}
+snRNA.features <- SelectIntegrationFeatures(object.list = snRNA.list, nfeatures = 3000)
+
+snRNA_harmony <- merge(snRNA.list[[1]], 
+                      y = snRNA.list[2:length(snRNA.list)],  
+                      project = "snRNAharmony", 
+                      merge.data = TRUE)
+
+VariableFeatures(snRNA_harmony) <- snRNA.features
+snRNA_harmony <- RunPCA(object = snRNA_harmony, assay = "SCT", npcs = 30)
+snRNA_harmony <- RunHarmony(object = snRNA_harmony,
+                           assay.use = "SCT",
+                           reduction = "pca",
+                           dims.use = 1:30,
+                           group.by.vars = "platform",
+                           plot_convergence = TRUE)
+snRNA_harmony <- RunUMAP(object = snRNA_harmony, assay = "SCT", reduction = "harmony", dims = 1:30)
+plots <- DimPlot(snRNA_harmony, group.by = c("platform", "orig.ident", "time","celltype"), combine = FALSE, pt.size = .2)
+plots <- lapply(X = plots, FUN = function(x) x + theme(legend.position = "top") + guides(color = guide_legend(nrow = 5,byrow = TRUE, override.aes = list(size = 4))))
+CombinePlots(plots)
+DimPlot(snRNA_harmony,group.by = "orig.ident",split.by="orig.ident",ncol=4)
+save(snRNA_merged,file = "snRNA_harmony_0308.RData")
+snRNA_merged <- FindNeighbors(object = snRNA_merged, assay = "SCT", reduction = "harmony", dims = 1:30)
+snRNA_merged <- FindClusters(object = pancreas_merged, resolution = 0.4)
