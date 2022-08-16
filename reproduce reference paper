@@ -1,0 +1,216 @@
+#####reproduce
+lf<-list.files(pattern = "\\.csv")
+files <- gsub("\\.csv","",lf)
+files
+for (i in seq_along(files)){
+  counts<- read.csv(lf[i],header=T,sep=",")
+  rownames(counts) <- counts[,2]
+  counts <- counts[,-c(1,2)]
+  seurat_obj <- CreateSeuratObject(counts,min.cell=5,
+                                   min.features = 150,
+                                   project = files[i]) #(2)
+  if(T){
+    seurat_obj$log10GenesPerUMI <- log10(seurat_obj$nFeature_RNA)/log10(seurat_obj$nCount_RNA)
+  }     
+  if(T){
+    seurat_obj$percent.mt <- PercentageFeatureSet(seurat_obj, patter="^MT-")
+    
+  }
+  
+  assign(files[i], seurat_obj) #(3)
+}
+Idents(day3_ctrl2_R2)<-"ctl2R23"
+Idents(day3_FSHD2_R1)<-"FSHD2R13"
+Idents(day3_FSHD2_R2)<-"FSHD2R23"
+Idents(day5_FSHD2_R2)<-"FSHD2R25"
+Idents(day5_FSHD2_R1)<-"FSHD22R15"
+Idents(day5_ctrl2_R1)<-"ctl2R15"
+Idents(day5_ctrl2_R2)<-"ctl2R25"
+Idents(day3_ctrl2_R1)<-"ctl2R13"
+day3_ctrl2_R1@meta.data[["orig.ident"]]<-gsub("Day","day3ctrlR1",day3_ctrl2_R1@meta.data[["orig.ident"]])
+day3_ctrl2_R2@meta.data[["orig.ident"]]<-gsub("Day","day3ctrlR2",day3_ctrl2_R2@meta.data[["orig.ident"]])
+
+day3_FSHD2_R1@meta.data[["orig.ident"]]<-gsub("Day","day3FSHD2R1",day3_FSHD2_R1@meta.data[["orig.ident"]])
+day3_FSHD2_R2@meta.data[["orig.ident"]]<-gsub("Day","day3FSHD2R2",day3_FSHD2_R2@meta.data[["orig.ident"]])
+
+day5_ctrl2_R1@meta.data[["orig.ident"]]<-gsub("Day","day5ctrlR1",day5_ctrl2_R1@meta.data[["orig.ident"]])
+
+day5_ctrl2_R2@meta.data[["orig.ident"]]<-gsub("Day","day5ctrlR2",day5_ctrl2_R2@meta.data[["orig.ident"]])
+
+day5_FSHD2_R1@meta.data[["orig.ident"]]<-gsub("Day","day5FSHD2R1",day5_FSHD2_R1@meta.data[["orig.ident"]])
+
+day5_FSHD2_R2@meta.data[["orig.ident"]]<-gsub("Day","day5FSHD2R2",day5_FSHD2_R2@meta.data[["orig.ident"]])
+#####from original read counts number
+> day3_ctrl.2_R1 = read.csv(file="day3_ctrl2_R1.csv",header=T,sep=",")
+> 
+  > 
+  > day3_ctrl.2_R2 = read.csv(file="day3_ctrl2_R2.csv",header=T,sep=",")
+> 
+  > 
+  > day5_ctrl.2_R1 = read.csv(file="day5_ctrl2_R1.csv",header=T,sep=",")
+> 
+  > 
+  > day5_ctrl.2_R2 = read.csv(file="day5_ctrl2_R2.csv",header=T,sep=",")
+> 
+  > 
+  > day3_FSHD2.2_R1 = read.csv(file="day3_FSHD2_R1.csv",header=T,sep=",")
+> 
+  > 
+  > 
+  > day3_FSHD2.2_R2 = read.csv(file="day3_FSHD2_R2.csv",header=T,sep=",")
+ day5_FSHD2.2_R1 = read.csv(file="day5_FSHD2_R1.csv",header=T,sep=",")
+day5_FSHD2.2_R2 = read.csv(file="day5_FSHD2_R2.csv",header=T,sep=",")
+####try in day3_ctrl.2_R1
+
+rownames(day3_ctrl.2_R1) <- day3_ctrl.2_R1[,2]
+day3_ctrl.2_R1 <-day3_ctrl.2_R1[,-c(1,2)]
+
+"SLC38A1","CCNA1","KHDC1L","MBD3L3","LEUTX","MBD3L2","CTB-25J19.1","ZNF596","RP11-432M8.17","ZSCAN4","TRIM43B","TRIM43","SLC34A2","CTD-2035E11.4","PRAMEF12","RP11-490B18.9","RFPL4B","RFPL2","PRAMEF9","PRAMEF1","DUXA","PRAMEF2","PRAMEF8","RFPL4A","RFPL4AL1","TRIM49","PRAMEF5","RP11-432M8.9","PRAMEF6","HNRNPCL3","PRAMEF20","RP11-437G21.3","PRAMEF14","PRAMEF15","PRAMEF25","ZNF296","VMO1","MBD3L5","RP11-437G21.2","RFPL1","PRAMEF13","RP11-432M8.22","KDM4E","PRAMEF11","TRIM49L2","TRIM49B","RP11-257K9.8","PRAMEF27","DUXB","RP11-437G21.1","PRAMEF17","PRAMEF19","PRAMEF26","RBP7","DUX4"
+subsetctrl3R1<-day3_ctrl.2_R1[which(rownames(day3_ctrl.2_R1) %in% fshd_induced[,1]),]
+subset1<-subsetctrl3R1[which(colnames(subset) %in% rownames(metadata)),]
+subset2<-subset1[-c(56:4394),]
+sum<-colSums(subset)
+sum<-as.data.frame(sum)
+
+
+%%%if we want merge it as data,we need tranform it and then mergesum <- t(sum)
+%%%subset<-rbind(subset,sum)
+##day3_ctrl.2_R2
+rownames(day3_ctrl.2_R2) <- day3_ctrl.2_R2[,2]
+day3_ctrl.2_R2 <-day3_ctrl.2_R2[,-c(1,2)]
+
+subsetctrl3R2<-day3_ctrl.2_R2[which(rownames(day3_ctrl.2_R2) %in% fshd_induced[,1]),]
+sumctrl3R2<-colSums(subsetctrl3R2)
+sumctrl3R2<-as.data.frame(sumctrl3R2)
+##day3_FSHD2.2_R1
+rownames(day3_FSHD2.2_R1) <- day3_FSHD2.2_R1[,2]
+day3_FSHD2.2_R1 <-day3_FSHD2.2_R1[,-c(1,2)]
+
+subsetfshd3R1<-day3_FSHD2.2_R1[which(rownames(day3_FSHD2.2_R1) %in% fshd_induced[,1]),]
+sumfshd3R1<-colSums(subsetfshd3R1)
+sumfshd3R1<-as.data.frame(sumfshd3R1)
+###day3_FSHD2.2_R2
+rownames(day3_FSHD2.2_R2) <- day3_FSHD2.2_R2[,2]
+day3_FSHD2.2_R2 <-day3_FSHD2.2_R2[,-c(1,2)]
+
+subsetfshd3R2<-day3_FSHD2.2_R2[which(rownames(day3_FSHD2.2_R2) %in% fshd_induced[,1]),]
+sumfshd3R2<-colSums(subsetfshd3R2)
+sumfshd3R2<-as.data.frame(sumfshd3R2)
+####day5_ctrl.2_R1
+
+rownames(day5_ctrl.2_R1) <- day5_ctrl.2_R1[,2]
+day5_ctrl.2_R1 <-day5_ctrl.2_R1[,-c(1,2)]
+
+subsetctrl5R1<-day5_ctrl.2_R1[which(rownames(day5_ctrl.2_R1) %in% fshd_induced[,1]),]
+sumctrl5R1<-colSums(subsetctrl5R1)
+sumctrl5R1<-as.data.frame(sumctrl5R1)
+
+##day5_ctrl.2_R2
+rownames(day5_ctrl.2_R2) <- day5_ctrl.2_R2[,2]
+day5_ctrl.2_R2 <-day5_ctrl.2_R2[,-c(1,2)]
+
+subsetctrl5R2<-day5_ctrl.2_R2[which(rownames(day5_ctrl.2_R2) %in% fshd_induced[,1]),]
+sumctrl5R2<-colSums(subsetctrl5R2)
+sumctrl5R2<-as.data.frame(sumctrl5R2)
+##day5_FSHD2.2_R1
+rownames(day5_FSHD2.2_R1) <- day5_FSHD2.2_R1[,2]
+day5_FSHD2.2_R1 <-day5_FSHD2.2_R1[,-c(1,2)]
+
+subsetfshd5R1<-day5_FSHD2.2_R1[which(rownames(day5_FSHD2.2_R1) %in% fshd_induced[,1]),]
+sumfshd5R1<-colSums(subsetfshd5R1)
+sumfshd5R1<-as.data.frame(sumfshd5R1)
+###day5_FSHD2.2_R2
+rownames(day5_FSHD2.2_R2) <- day5_FSHD2.2_R2[,2]
+day5_FSHD2.2_R2 <-day5_FSHD2.2_R2[,-c(1,2)]
+
+subsetfshd5R2<-day5_FSHD2.2_R2[which(rownames(day5_FSHD2.2_R2) %in% fshd_induced[,1]),]
+sumfshd5R2<-colSums(subsetfshd5R2)
+sumfshd5R2<-as.data.frame(sumfshd5R2)
+
+#the data we obtained is larger than seurat object
+
+#####QC
+### 绘制质控小提琴图
+# 设置可能用到的主题
+theme.set2 = theme(axis.title.x=element_blank())
+# 设置绘图元素
+plot.featrures = c("nFeature_RNA", "nCount_RNA", "percent.mt")
+group = "orig.ident"
+# 质控前小提琴图
+plots = list()
+for(i in seq_along(plot.featrures)){
+  plots[[i]] = VlnPlot(merged_seurat, group.by=group, pt.size = 0,
+                       features = plot.featrures[i]) + theme.set2 + NoLegend()}
+violin <- wrap_plots(plots = plots, nrow=2)    
+
+### 设置质控标准
+
+
+### 数据质控并绘制小提琴图
+merged_seurat <- subset(merged_seurat, subset= (nCount_RNA >= 500) & 
+                          (nFeature_RNA >= 150) &
+                          (percent.mt < 20))
+########maybe the steps before we don't need
+merged_seurat <- merge(x =day3_ctrl2_R1, y =c(day3_ctrl2_R2,day3_FSHD2_R1,day3_FSHD2_R2,day5_ctrl2_R1,day5_ctrl2_R2,day5_FSHD2_R1,day5_FSHD2_R2), add.cell.ids  = c('ctrl2R13','ctrl2R23','FSHD2R13','FSHD2R23','ctrl2R15','ctrl2R25','FSHD2R15','FSHD2R25'))
+snRNA <- NormalizeData(merged_seurat) %>% FindVariableFeatures(merged_seurat,nfeatures = 3000) %>% ScaleData(merged_seurat)
+snRNA <- RunPCA(snRNA,verbose = F)
+ElbowPlot(scRNAbet, ndims=50)
+
+####
+ifnb.list <- SplitObject(merged_seurat, split.by = "orig.ident")
+ifnb.list <- lapply(X = ifnb.list, FUN = SCTransform)
+snRNA <- merge(ifnb.list[[1]], ifnb.list[2:length(ifnb.list)])
+
+# normalize and identify variable features for each dataset independently
+ifnb.list <- lapply(X = ifnb.list, FUN = function(x) {
+  x <- NormalizeData(x)
+  x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000)
+})
+
+snRNA <- merge(ifnb.list[[1]], ifnb.list[2:length(ifnb.list)])
+snRNA <- ScaleData(snRNA, verbose = FALSE)
+
+snRNA <- NormalizeData(merged_seurat) %>% FindVariableFeatures(nfeatures = 3000) %>% ScaleData()
+
+snRNA <- RunPCA(snRNA, npcs = 30, verbose = FALSE)
+snRNA <- RunUMAP(snRNA, reduction = "pca", dims = 1:30)
+snRNA <- FindNeighbors(snRNA, reduction = "pca", dims = 1:30)
+snRNA <- FindClusters(snRNA, resolution = 0.5)
+# Visualization
+p1 <- DimPlot(snRNA, reduction = "umap", group.by = "orig.ident")
+p2 <- DimPlot(snRNA, reduction = "umap", label = TRUE, repel = TRUE)
+p1 + p2
+DefaultAssay(snRNA) <- "RNA"
+FeaturePlot(snRNA,features = "ZSCAN4")
+####
+logFCfilter=0.5
+adjPvalFilter=0.05
+all.markers <- FindAllMarkers(object = snRNA,
+                               only.pos = FALSE,
+                               min.pct = 0.25,
+                               logfc.threshold = logFCfilter)
+#####
+DoHeatmap(snRNA, features = fshd_induced[,1])
+snRNA <- ScaleData(object = snRNA,features = rownames(snRNA))
+
+pbmc <- SCTransform(pbmc, vars.to.regress = "percent.mt", verbose = FALSE)
+
+
+combined_averages <- AverageExpression(snRNA, return.seurat = TRUE) 
+DoHeatmap(combined_averages, features = c(rownames(markersC10)), label = FALSE ,draw.lines = FALSE) + scale_fill_gradientn(colors = rev(RColorBrewer::brewer.pal(n =4, name = "RdBu")))
+
+ scaledata<-average[["SCT"]]
+scaledata_t<-as.data.frame(t(scaledata))
+View(scaledata_t)
+pheatmap(scaledata,cluster_cols = hclusta)
+ View(scaledata)
+ XX<-scaledata[which(rownames(scaledata) %in% induced_FSHD[,1]),]
+ View(XX)
+ pheatmap(XX,cluster_cols = hclusta)
+ View(XX)
+ pheatmap(XX,scale="column",cluster_cols = hclusta)
+pheatmap(XX,scale="row",cluster_cols = hclusta)
+pheatmap(XX,scale="column",cluster_cols = hclusta)
+pheatmap(XX,scale="row",cluster_cols = hclusta)
+pheatmap(XX,scale="column",cluster_cols = hclusta)
+> pheatmap(XX,scale="row",cluster_cols = hclusta)
