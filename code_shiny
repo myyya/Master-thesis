@@ -1,0 +1,141 @@
+# This is the server logic of a Shiny web application. You can run the 
+# application by clicking 'Run App' above.
+#
+# Find out more about building applications with Shiny here:
+# 
+#    http://shiny.rstudio.com/
+#
+
+library(shiny)
+library(Seurat)
+options(shiny.maxRequestSize=70*1024^2)
+#library(shinydashboard)
+pb<-readRDS("data/all.rds")
+# Define server logic required to draw a histogram
+
+IdentRename<-function(pb,oldname,newname){
+  cluster.ids <-levels(pb)
+  cluster.ids[which(cluster.ids  == oldname)] <- newname
+  names(cluster.ids) <- levels(pb)
+  pb <- RenameIdents(pb, cluster.ids)
+  #pbmc<-IdentRename(pb,oldname,newname)
+}
+
+shinyServer(function(input, output) {
+  
+  output$contents <-  DT::renderDataTable({
+    inFile <- input$file1
+    if (is.null(inFile)){
+      return(NULL)
+    }else{
+      pb<- readRDS(inFile$datapath)
+      pb
+      req(pb)
+      
+    }
+  })
+  
+  output$distPlot <- renderPlot({
+    
+    DimPlot(IdentRename(pb,input$Choosecluster,input$clustername), label = TRUE,reduction   = input$comment) + NoLegend()
+    
+  })
+  
+  output$VlnPlot<-renderPlot({
+    VlnPlot(pb, features = input$gene, pt.size = 0.2, ncol = 1)
+  })
+  
+  output$FeaturePlot<-renderPlot({
+    FeaturePlot(IdentRename(pb,input$Choosecluster,input$clustername), features = input$gene, reduction= input$comment, pt.size = 0.2, ncol = 1)
+  })
+  
+  output$table<-renderDataTable(
+    #iris,
+    df <-data.frame( KKKK = input$clustername),
+    options = list(
+      pageLength = 5,
+      initComplete = I("function(settings, json) {alert('Done.');}")
+    ))
+  
+  output$cluster<-renderUI({
+    clusterlist<-unique(pb@meta.data$seurat_clusters)
+    selectInput("ChooseCluster",'ChooseCluster',list=as.vector(clusterlist))
+  })
+  
+})
+
+
+#
+# This is the user-interface definition of a Shiny web application. You can
+# run the application by clicking 'Run App' above.
+#
+# Find out more about building applications with Shiny here:
+# 
+#    http://shiny.rstudio.com/
+#
+
+library(shiny)
+library(Seurat)
+#library(shinydashboard)
+
+pb<-readRDS("data/all.rds")
+
+# Define UI for application that draws a histogram
+shinyUI(fluidPage(
+  
+  # Application title
+  titlePanel(p("Report" , style = "color:#3474A7")),
+  
+  # Sidebar with a slider input for number of bins 
+  sidebarLayout(
+    
+    sidebarPanel(
+      
+      fileInput('file1', 'Choose Seurat  object  RDS File',
+                accept=c('rds', 
+                         '', 
+                         '.rds')),
+      
+      conditionalPanel(
+        condition = "input.smoother == ture",
+        selectInput("comment","reduction:",list("umap","tsne","pca","harmony"))
+      ),
+      
+      textInput(inputId = "clustername",
+                label =  "clusterName",
+                value = "HERE"
+      ),
+      
+      conditionalPanel(
+        condition = "input.cluster == ture",
+        selectInput("Choosecluster",'ChooseCluster',as.list( levels(pb) )) #  levels(pb)  as.list(pb@meta.data$seurat_clusters)
+        
+      ),
+      
+      conditionalPanel(
+        condition = "input == ture",
+        selectInput("gene",'ChooseGene',as.list( rownames(pb) ))
+        
+      )
+      
+    ),
+    
+    # Show a plot of the generated distribution
+    mainPanel(
+      #h3("DimPlot"),
+      
+      tabsetPanel(
+        #tableOutput('contents'),
+        imageOutput("p1", width = "100%", height = "400px", click = NULL,
+                    dblclick = NULL, hover = NULL, brush = NULL,inline = FALSE),
+        
+        tabPanel("Reduction",plotOutput("distPlot")),
+        tabPanel("VlnPlot",plotOutput("VlnPlot")),
+        tabPanel("FeaturePlot",plotOutput("FeaturePlot"))
+        #tabPanel('table',dataTableOutput('table'))
+        
+      )
+      
+    )
+  )
+))
