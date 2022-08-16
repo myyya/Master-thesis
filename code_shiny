@@ -139,3 +139,7 @@ shinyUI(fluidPage(
     )
   )
 ))
+
+rsconnect::setAccountInfo(name='myshinyproject', token='006235B79460EA1352BDB64B4C9FEA88', secret='dt0tLLBFLI3lSh7Mb5ZgqzZ2AJ9b3EnqrmwfBBbZ')
+library(rsconnect)
+rsconnect::deployApp("/Users/zyaaa/Desktop/project/shiny_view")
